@@ -13,31 +13,32 @@ sealed interface ItemList {
 
     @Serializable
     data class ArtistAlbums(
-        val providerInstance: String,
-        val artistId: String,
+        val mappings: List<Pair<String, String>>,
         override val providerDomain: String,
     ) : ItemList {
         override val mediaType: MediaType = MediaType.ALBUM
 
         constructor(providerMapping: ProviderMapping) : this(
-            providerInstance = providerMapping.providerInstance,
-            artistId = providerMapping.itemId,
+            mappings = listOf(Pair(providerMapping.providerInstance, providerMapping.itemId)),
             providerDomain = providerMapping.providerDomain,
+        )
+
+        constructor(providerMappings: List<ProviderMapping>) : this(
+            mappings = providerMappings.map { Pair(it.providerInstance, it.itemId) },
+            providerDomain = providerMappings.first().providerDomain,
         )
     }
 
     @Serializable
     data class ArtistTopTracks(
-        val providerInstance: String,
-        val artistId: String,
+        val mappings: List<Pair<String, String>>,
         override val providerDomain: String,
     ) : ItemList {
         override val mediaType: MediaType = MediaType.TRACK
 
-        constructor(providerMapping: ProviderMapping) : this(
-            providerInstance = providerMapping.providerInstance,
-            artistId = providerMapping.itemId,
-            providerDomain = providerMapping.providerDomain,
+        constructor(providerMappings: List<ProviderMapping>) : this(
+            mappings = providerMappings.map { Pair(it.providerInstance, it.itemId) },
+            providerDomain = providerMappings.first().providerDomain,
         )
     }
 
@@ -48,21 +49,27 @@ sealed interface ItemList {
     }
 }
 
-fun ItemList.toRequest(): Request {
+fun ItemList.toRequests(): List<Request> {
     return when (this) {
-        is ItemList.ArtistAlbums -> Request.Artist.getAlbums(
-            this.artistId,
-            this.providerInstance,
-        )
+        is ItemList.ArtistAlbums -> {
+            this.mappings.map {
+                val (providerInstance, itemId) = it
+                Request.Artist.getAlbums(itemId, providerInstance)
+            }
+        }
 
-        is ItemList.ArtistTopTracks -> Request.Artist.getTopTracks(
-            this.artistId,
-            this.providerInstance,
-        )
+        is ItemList.ArtistTopTracks -> {
+            this.mappings.map {
+                val (providerInstance, itemId) = it
+                Request.Artist.getTopTracks(itemId, providerInstance)
+            }
+        }
 
-        is ItemList.ArtistLibrary -> Request.Artist.getAlbums(
-            this.artistId,
-            ServerMediaItem.LIBRARY_PROVIDER,
+        is ItemList.ArtistLibrary -> listOf(
+            Request.Artist.getAlbums(
+                this.artistId,
+                ServerMediaItem.LIBRARY_PROVIDER,
+            ),
         )
     }
 }

@@ -6,6 +6,7 @@ import io.music_assistant.client.data.model.client.items.FetchArtistItemsUseCase
 import io.music_assistant.client.data.model.client.items.support.StubMediaItemRepository
 import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.ui.compose.item.ItemList
+import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -119,9 +120,10 @@ class FetchArtistItemsUseCaseTest {
     }
 
     @Test
-    fun `combines mappings if they are the same instance`() = runTest {
-        val mapping1 = ProviderMapping("1", "niflheim", "niflheim-1")
-        val mapping2 = ProviderMapping("2", "niflheim", "niflheim-1")
+    fun `combines mappings if they are the same instance`(): TestResult = runTest {
+        val providerDomain = "niflheim"
+        val mapping1 = ProviderMapping("1", providerDomain, "niflheim-1")
+        val mapping2 = ProviderMapping("2", providerDomain, "niflheim-1")
         val artist = AppMediaItemFixtures.artist(providerMappings = listOf(mapping1, mapping2))
         val mapping1Albums = listOf(AppMediaItemFixtures.album(artist = artist))
         val mapping2Albums = listOf(AppMediaItemFixtures.album(artist = artist))
@@ -138,11 +140,18 @@ class FetchArtistItemsUseCaseTest {
 
         val useCase = FetchArtistItemsUseCase(mediaItemRepository)
         val artistItems = useCase.run(artist) { ItemList.ArtistAlbums(it) }
+
+        val expectedItemList = ItemList.ArtistAlbums(
+            mappings = listOf(mapping1, mapping2).map {
+                Pair(it.providerInstance, it.itemId)
+            },
+            providerDomain = providerDomain,
+        )
         assertEquals(
             ArtistItems(
                 items = mapping1Albums + mapping2Albums,
-                itemList = ItemList.ArtistAlbums(mapping1),
-                options = listOf(ItemList.ArtistAlbums(mapping1), ItemList.ArtistAlbums(mapping2)),
+                itemList = expectedItemList,
+                options = listOf(expectedItemList),
             ),
             artistItems,
         )

@@ -33,7 +33,7 @@ class ItemListViewModel(
 
     init {
         viewModelScope.launch {
-            items.set(itemList.toRequest())
+            items.set(itemList.toRequests())
         }
     }
 

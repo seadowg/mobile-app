@@ -28,22 +28,22 @@ class MediaItemDataMediator(
     private val mediaItemRepository: MediaItemRepository,
 ) {
     private val stateFlow = MutableStateFlow(initial)
-    private var request: Request? = null
+    private var requests: List<Request>? = null
 
     /**
-     * Retrieve and store items using [request]. [request] will also be used to update the items
+     * Retrieve and store items using [requests]. [requests] will also be used to update the items
      * if/when needed.
      */
-    suspend fun set(request: Request) {
-        this.request = request
+    suspend fun set(requests: List<Request>) {
+        this.requests = requests
         reload()
     }
 
     /**
-     * Store [items]. [request] will be used to update the items if/when needed.
+     * Store [items]. [requests] will be used to update the items if/when needed.
      */
-    fun set(items: List<AppMediaItem>, request: Request) {
-        this.request = request
+    fun set(items: List<AppMediaItem>, requests: List<Request>) {
+        this.requests = requests
         stateFlow.value = DataState.Data(items)
     }
 
@@ -95,16 +95,27 @@ class MediaItemDataMediator(
     }
 
     private suspend fun reload() {
-        request?.let {
+        requests?.let {
             stateFlow.value = DataState.Loading()
             try {
-                stateFlow.value =
-                    DataState.Data(mediaItemRepository.fetchMediaItems(it).getOrEmptyList())
+                val items = it.flatMap {
+                    mediaItemRepository.fetchMediaItems(it).getOrEmptyList()
+                }
+
+                stateFlow.value = DataState.Data(items)
             } catch (_: Exception) {
                 stateFlow.value = DataState.Error()
             }
         }
     }
+}
+
+suspend fun MediaItemDataMediator.set(request: Request) {
+    this.set(listOf(request))
+}
+
+fun MediaItemDataMediator.set(items: List<AppMediaItem>, request: Request) {
+    this.set(items, listOf(request))
 }
 
 private fun <T : AppMediaItem> List<T>.replacing(changed: T): List<T> =

@@ -9,13 +9,14 @@ import io.music_assistant.client.data.model.client.items.Artist
 import io.music_assistant.client.data.model.client.items.FetchArtistItemsUseCase
 import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.data.model.client.items.itemList
+import io.music_assistant.client.data.model.client.items.set
 import io.music_assistant.client.data.repository.MediaItemRepository
 import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.common.map
 import io.music_assistant.client.ui.compose.common.mapData
 import io.music_assistant.client.ui.compose.item.ItemDetailsViewModel.Companion.ARTIST_SECTION_LIMIT
 import io.music_assistant.client.ui.compose.item.ItemList
-import io.music_assistant.client.ui.compose.item.toRequest
+import io.music_assistant.client.ui.compose.item.toRequests
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -99,7 +100,7 @@ class ArtistDetailsViewModel(
 
             if (artistItems != null) {
                 val (items, itemList, options) = artistItems
-                allItems.set(items, itemList.toRequest())
+                allItems.set(items, itemList.toRequests())
                 allProviderFilter.value = Section.ProviderFilter(itemList, options)
             } else {
                 allItems.setError()
@@ -111,7 +112,7 @@ class ArtistDetailsViewModel(
 
             if (result != null) {
                 val (items, itemList, options) = result
-                topTrackItems.set(items, itemList.toRequest())
+                topTrackItems.set(items, itemList.toRequests())
                 topTracksFilter.value = Section.ProviderFilter(itemList, options)
             } else {
                 topTrackItems.setError()
@@ -125,7 +126,7 @@ class ArtistDetailsViewModel(
         }
 
         viewModelScope.launch {
-            allItems.set(itemList.toRequest())
+            allItems.set(itemList.toRequests())
         }
     }
 
@@ -133,7 +134,7 @@ class ArtistDetailsViewModel(
         topTracksFilter.update { it?.copy(current = itemList) }
 
         viewModelScope.launch {
-            topTrackItems.set(itemList.toRequest())
+            topTrackItems.set(itemList.toRequests())
         }
     }
 
