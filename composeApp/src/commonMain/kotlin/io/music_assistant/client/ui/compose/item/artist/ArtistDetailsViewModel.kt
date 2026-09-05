@@ -6,6 +6,7 @@ import io.music_assistant.client.api.Request
 import io.music_assistant.client.data.model.client.items.Album
 import io.music_assistant.client.data.model.client.items.AppMediaItem
 import io.music_assistant.client.data.model.client.items.Artist
+import io.music_assistant.client.data.model.client.items.FetchArtistItemsUseCase
 import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.data.model.client.items.itemList
 import io.music_assistant.client.data.model.server.ProviderMapping
@@ -13,7 +14,6 @@ import io.music_assistant.client.data.repository.MediaItemRepository
 import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.common.map
 import io.music_assistant.client.ui.compose.common.mapData
-import io.music_assistant.client.ui.compose.item.FetchArtistItemsUseCase
 import io.music_assistant.client.ui.compose.item.ItemDetailsViewModel.Companion.ARTIST_SECTION_LIMIT
 import io.music_assistant.client.ui.compose.item.ItemList
 import io.music_assistant.client.ui.compose.item.toRequest

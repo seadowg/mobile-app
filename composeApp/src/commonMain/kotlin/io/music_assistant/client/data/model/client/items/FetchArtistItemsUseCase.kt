@@ -1,9 +1,9 @@
-package io.music_assistant.client.ui.compose.item
+package io.music_assistant.client.data.model.client.items
 
-import io.music_assistant.client.data.model.client.items.AppMediaItem
-import io.music_assistant.client.data.model.client.items.Artist
 import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.data.repository.MediaItemRepository
+import io.music_assistant.client.ui.compose.item.ItemList
+import io.music_assistant.client.ui.compose.item.toRequest
 
 class FetchArtistItemsUseCase(private val mediaItemRepository: MediaItemRepository) {
     suspend fun run(
