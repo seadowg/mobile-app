@@ -98,15 +98,12 @@ class ArtistDetailsViewModel(
         viewModelScope.launch {
             val itemListBuilder: (ProviderMapping) -> ItemList =
                 { ItemList.ArtistAlbums(it.providerInstance, it.itemId, it.providerDomain) }
-            val result = fetchArtistItemsUseCase.run(artist, itemListBuilder)
+            val artistItems = fetchArtistItemsUseCase.run(artist, itemListBuilder)
 
-            if (result != null) {
-                val (items, itemList) = result
+            if (artistItems != null) {
+                val (items, itemList, options) = artistItems
                 allItems.set(items, itemList.toRequest())
-                allProviderFilter.value = Section.ProviderFilter(
-                    itemList,
-                    artist.providerMappings?.map { itemListBuilder(it) } ?: emptyList(),
-                )
+                allProviderFilter.value = Section.ProviderFilter(itemList, options)
             } else {
                 allItems.setError()
             }
@@ -118,12 +115,9 @@ class ArtistDetailsViewModel(
             val result = fetchArtistItemsUseCase.run(artist, itemListBuilder)
 
             if (result != null) {
-                val (items, itemList) = result
+                val (items, itemList, options) = result
                 topTrackItems.set(items, itemList.toRequest())
-                topTracksFilter.value = Section.ProviderFilter(
-                    itemList,
-                    artist.providerMappings?.map { itemListBuilder(it) } ?: emptyList(),
-                )
+                topTracksFilter.value = Section.ProviderFilter(itemList, options)
             } else {
                 topTrackItems.setError()
             }

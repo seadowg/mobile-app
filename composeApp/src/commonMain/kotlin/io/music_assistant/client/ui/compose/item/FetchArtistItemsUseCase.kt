@@ -9,21 +9,26 @@ class FetchArtistItemsUseCase(private val mediaItemRepository: MediaItemReposito
     suspend fun run(
         artist: Artist,
         itemListBuilder: (ProviderMapping) -> ItemList,
-    ): Pair<List<AppMediaItem>, ItemList>? {
+    ): ArtistItems? {
         if (artist.providerMappings.isNullOrEmpty()) {
             return null
         }
 
-        for (mapping in artist.providerMappings) {
-            val itemList = itemListBuilder(mapping)
+        val itemLists = artist.providerMappings.map { itemListBuilder(it) }
+        for (itemList in itemLists) {
             val result = mediaItemRepository.fetchMediaItems(itemList.toRequest())
             val items = result.getOrNull() ?: emptyList()
             if (items.isNotEmpty()) {
-                return Pair(items, itemList)
+                return ArtistItems(items, itemList, itemLists)
             }
         }
 
-        val mapping = artist.providerMappings.first()
-        return Pair(emptyList(), itemListBuilder(mapping))
+        return ArtistItems(emptyList(), itemLists.first(), itemLists)
     }
+
+    data class ArtistItems(
+        val items: List<AppMediaItem>,
+        val itemList: ItemList,
+        val options: List<ItemList>,
+    )
 }
