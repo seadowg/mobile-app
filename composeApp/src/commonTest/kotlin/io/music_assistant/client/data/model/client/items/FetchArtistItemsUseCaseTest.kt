@@ -2,6 +2,7 @@ package io.music_assistant.client.data.model.client.items
 
 import io.music_assistant.client.api.Request
 import io.music_assistant.client.data.model.client.AppMediaItemFixtures
+import io.music_assistant.client.data.model.client.items.FetchArtistItemsUseCase.ArtistItems
 import io.music_assistant.client.data.model.client.items.support.StubMediaItemRepository
 import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.ui.compose.item.ItemList
@@ -32,12 +33,14 @@ class FetchArtistItemsUseCaseTest {
 
         val useCase = FetchArtistItemsUseCase(mediaItemRepository)
         val artistItems = useCase.run(artist) { ItemList.ArtistAlbums(it) }
-
         assertEquals(
-            FetchArtistItemsUseCase.ArtistItems(
+            ArtistItems(
                 items = provider1Albums,
                 itemList = ItemList.ArtistAlbums(provider1),
-                options = listOf(ItemList.ArtistAlbums(provider1), ItemList.ArtistAlbums(provider2)),
+                options = listOf(
+                    ItemList.ArtistAlbums(provider1),
+                    ItemList.ArtistAlbums(provider2),
+                ),
             ),
             artistItems,
         )
@@ -62,12 +65,14 @@ class FetchArtistItemsUseCaseTest {
 
         val useCase = FetchArtistItemsUseCase(mediaItemRepository)
         val artistItems = useCase.run(artist) { ItemList.ArtistAlbums(it) }
-
         assertEquals(
-            FetchArtistItemsUseCase.ArtistItems(
+            ArtistItems(
                 items = provider2Albums,
                 itemList = ItemList.ArtistAlbums(provider2),
-                options = listOf(ItemList.ArtistAlbums(provider1), ItemList.ArtistAlbums(provider2)),
+                options = listOf(
+                    ItemList.ArtistAlbums(provider1),
+                    ItemList.ArtistAlbums(provider2),
+                ),
             ),
             artistItems,
         )
@@ -91,12 +96,14 @@ class FetchArtistItemsUseCaseTest {
 
         val useCase = FetchArtistItemsUseCase(mediaItemRepository)
         val artistItems = useCase.run(artist) { ItemList.ArtistAlbums(it) }
-
         assertEquals(
-            FetchArtistItemsUseCase.ArtistItems(
+            ArtistItems(
                 items = emptyList(),
                 itemList = ItemList.ArtistAlbums(provider1),
-                options = listOf(ItemList.ArtistAlbums(provider1), ItemList.ArtistAlbums(provider2)),
+                options = listOf(
+                    ItemList.ArtistAlbums(provider1),
+                    ItemList.ArtistAlbums(provider2),
+                ),
             ),
             artistItems,
         )
@@ -109,5 +116,35 @@ class FetchArtistItemsUseCaseTest {
         val useCase = FetchArtistItemsUseCase(mediaItemRepository)
         val artistItems = useCase.run(artist) { ItemList.ArtistAlbums(it) }
         assertEquals(null, artistItems)
+    }
+
+    @Test
+    fun `combines mappings if they are the same instance`() = runTest {
+        val mapping1 = ProviderMapping("1", "niflheim", "niflheim-1")
+        val mapping2 = ProviderMapping("2", "niflheim", "niflheim-1")
+        val artist = AppMediaItemFixtures.artist(providerMappings = listOf(mapping1, mapping2))
+        val mapping1Albums = listOf(AppMediaItemFixtures.album(artist = artist))
+        val mapping2Albums = listOf(AppMediaItemFixtures.album(artist = artist))
+
+        mediaItemRepository.setItemsResult(
+            request = Request.Artist.getAlbums(mapping1.itemId, mapping1.providerInstance),
+            result = Result.success(mapping1Albums),
+        )
+
+        mediaItemRepository.setItemsResult(
+            request = Request.Artist.getAlbums(mapping2.itemId, mapping2.providerInstance),
+            result = Result.success(mapping2Albums),
+        )
+
+        val useCase = FetchArtistItemsUseCase(mediaItemRepository)
+        val artistItems = useCase.run(artist) { ItemList.ArtistAlbums(it) }
+        assertEquals(
+            ArtistItems(
+                items = mapping1Albums + mapping2Albums,
+                itemList = ItemList.ArtistAlbums(mapping1),
+                options = listOf(ItemList.ArtistAlbums(mapping1), ItemList.ArtistAlbums(mapping2)),
+            ),
+            artistItems,
+        )
     }
 }

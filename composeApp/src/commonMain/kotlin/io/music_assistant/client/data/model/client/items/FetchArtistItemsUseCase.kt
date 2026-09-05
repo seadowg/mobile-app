@@ -15,10 +15,16 @@ class FetchArtistItemsUseCase(private val mediaItemRepository: MediaItemReposito
         }
 
         val itemLists = artist.providerMappings.map { itemListBuilder(it) }
-        for (itemList in itemLists) {
-            val result = mediaItemRepository.fetchMediaItems(itemList.toRequest())
-            val items = result.getOrNull() ?: emptyList()
+        val providers = artist.providerMappings.groupBy { it.providerInstance }.map { it.value }
+        for (mappings in providers) {
+            val items = mappings.flatMap {
+                val itemList = itemListBuilder(it)
+                val result = mediaItemRepository.fetchMediaItems(itemList.toRequest())
+                result.getOrNull() ?: emptyList()
+            }
+
             if (items.isNotEmpty()) {
+                val itemList = itemListBuilder(mappings.first())
                 return ArtistItems(items, itemList, itemLists)
             }
         }
