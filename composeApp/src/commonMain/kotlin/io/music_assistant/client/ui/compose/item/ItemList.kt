@@ -2,6 +2,7 @@ package io.music_assistant.client.ui.compose.item
 
 import io.music_assistant.client.api.Request
 import io.music_assistant.client.data.model.client.MediaType
+import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.data.model.server.ServerMediaItem
 import kotlinx.serialization.Serializable
 
@@ -17,6 +18,12 @@ sealed interface ItemList {
         override val providerDomain: String,
     ) : ItemList {
         override val mediaType: MediaType = MediaType.ALBUM
+
+        constructor(providerMapping: ProviderMapping) : this(
+            providerInstance = providerMapping.providerInstance,
+            artistId = providerMapping.itemId,
+            providerDomain = providerMapping.providerDomain,
+        )
     }
 
     @Serializable
@@ -26,6 +33,12 @@ sealed interface ItemList {
         override val providerDomain: String,
     ) : ItemList {
         override val mediaType: MediaType = MediaType.TRACK
+
+        constructor(providerMapping: ProviderMapping) : this(
+            providerInstance = providerMapping.providerInstance,
+            artistId = providerMapping.itemId,
+            providerDomain = providerMapping.providerDomain,
+        )
     }
 
     @Serializable

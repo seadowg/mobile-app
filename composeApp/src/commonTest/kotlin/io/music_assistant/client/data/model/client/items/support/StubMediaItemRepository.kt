@@ -14,7 +14,7 @@ class StubMediaItemRepository : MediaItemRepository {
     private val itemsResults = mutableMapOf<Pair<String, JsonObject?>, Result<List<AppMediaItem>>>()
 
     override suspend fun fetchMediaItems(request: Request): Result<List<AppMediaItem>> {
-        return itemsResults[request.key()] ?: throw IllegalStateException("No stub for: $request")
+        return itemsResults[request.key()] ?: error("No stub for: $request")
     }
 
     private val _itemChanges = MutableSharedFlow<MediaItemChange>()

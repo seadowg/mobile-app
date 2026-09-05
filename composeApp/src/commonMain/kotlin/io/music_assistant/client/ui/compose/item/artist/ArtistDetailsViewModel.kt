@@ -9,7 +9,6 @@ import io.music_assistant.client.data.model.client.items.Artist
 import io.music_assistant.client.data.model.client.items.FetchArtistItemsUseCase
 import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.data.model.client.items.itemList
-import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.data.repository.MediaItemRepository
 import io.music_assistant.client.ui.compose.common.DataState
 import io.music_assistant.client.ui.compose.common.map
@@ -96,9 +95,7 @@ class ArtistDetailsViewModel(
         }
 
         viewModelScope.launch {
-            val itemListBuilder: (ProviderMapping) -> ItemList =
-                { ItemList.ArtistAlbums(it.providerInstance, it.itemId, it.providerDomain) }
-            val artistItems = fetchArtistItemsUseCase.run(artist, itemListBuilder)
+            val artistItems = fetchArtistItemsUseCase.run(artist) { ItemList.ArtistAlbums(it) }
 
             if (artistItems != null) {
                 val (items, itemList, options) = artistItems
@@ -110,9 +107,7 @@ class ArtistDetailsViewModel(
         }
 
         viewModelScope.launch {
-            val itemListBuilder: (ProviderMapping) -> ItemList =
-                { ItemList.ArtistTopTracks(it.providerInstance, it.itemId, it.providerDomain) }
-            val result = fetchArtistItemsUseCase.run(artist, itemListBuilder)
+            val result = fetchArtistItemsUseCase.run(artist) { ItemList.ArtistTopTracks(it) }
 
             if (result != null) {
                 val (items, itemList, options) = result
