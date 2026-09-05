@@ -16,10 +16,12 @@ import io.music_assistant.client.ui.compose.common.mapData
 import io.music_assistant.client.ui.compose.item.FetchArtistItemsUseCase
 import io.music_assistant.client.ui.compose.item.ItemDetailsViewModel.Companion.ARTIST_SECTION_LIMIT
 import io.music_assistant.client.ui.compose.item.ItemList
+import io.music_assistant.client.ui.compose.item.toRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ArtistDetailsViewModel(
@@ -50,10 +52,7 @@ class ArtistDetailsViewModel(
                         items = it
                             .filterIsInstance<Album>()
                             .take(ARTIST_SECTION_LIMIT),
-                        itemList = ItemList.ArtistAlbums(
-                            providerFilter.current.providerInstance,
-                            providerFilter.current.itemId,
-                        ),
+                        itemList = providerFilter.current,
                         providerFilter = providerFilter,
                     )
                 }
@@ -64,19 +63,16 @@ class ArtistDetailsViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, DataState.Loading())
 
     private val topTrackItems = itemList(mediaItemRepository)
-    private val topTracksProviderInfo = MutableStateFlow<Section.ProviderFilter?>(null)
+    private val topTracksFilter = MutableStateFlow<Section.ProviderFilter?>(null)
     val topTracks = topTrackItems.asFlow()
-        .combine(topTracksProviderInfo) { items, providerFilter ->
+        .combine(topTracksFilter) { items, providerFilter ->
             if (providerFilter != null) {
                 items.map {
                     Section(
                         items = it
                             .filterIsInstance<Track>()
                             .take(ARTIST_SECTION_LIMIT),
-                        itemList = ItemList.ArtistTopTracks(
-                            providerFilter.current.providerInstance,
-                            providerFilter.current.itemId,
-                        ),
+                        itemList = providerFilter.current,
                         providerFilter = providerFilter,
                     )
                 }
@@ -100,16 +96,16 @@ class ArtistDetailsViewModel(
         }
 
         viewModelScope.launch {
-            val itemsWithMappings = fetchArtistItemsUseCase.run(
-                artist,
-                Request.Artist::getAlbums,
-            )
+            val itemListBuilder: (ProviderMapping) -> ItemList =
+                { ItemList.ArtistAlbums(it.providerInstance, it.itemId, it.providerDomain) }
+            val result = fetchArtistItemsUseCase.run(artist, itemListBuilder)
 
-            if (itemsWithMappings != null) {
-                allItems.set(itemsWithMappings.items, itemsWithMappings.request)
+            if (result != null) {
+                val (items, itemList) = result
+                allItems.set(items, itemList.toRequest())
                 allProviderFilter.value = Section.ProviderFilter(
-                    itemsWithMappings.mapping,
-                    artist.providerMappings ?: emptyList(),
+                    itemList,
+                    artist.providerMappings?.map { itemListBuilder(it) } ?: emptyList(),
                 )
             } else {
                 allItems.setError()
@@ -117,16 +113,16 @@ class ArtistDetailsViewModel(
         }
 
         viewModelScope.launch {
-            val itemsWithMappings = fetchArtistItemsUseCase.run(
-                artist,
-                Request.Artist::getTopTracks,
-            )
+            val itemListBuilder: (ProviderMapping) -> ItemList =
+                { ItemList.ArtistTopTracks(it.providerInstance, it.itemId, it.providerDomain) }
+            val result = fetchArtistItemsUseCase.run(artist, itemListBuilder)
 
-            if (itemsWithMappings != null) {
-                topTrackItems.set(itemsWithMappings.items, itemsWithMappings.request)
-                topTracksProviderInfo.value = Section.ProviderFilter(
-                    itemsWithMappings.mapping,
-                    artist.providerMappings ?: emptyList(),
+            if (result != null) {
+                val (items, itemList) = result
+                topTrackItems.set(items, itemList.toRequest())
+                topTracksFilter.value = Section.ProviderFilter(
+                    itemList,
+                    artist.providerMappings?.map { itemListBuilder(it) } ?: emptyList(),
                 )
             } else {
                 topTrackItems.setError()
@@ -134,29 +130,21 @@ class ArtistDetailsViewModel(
         }
     }
 
-    fun loadAlbumsForProvider(mapping: ProviderMapping) {
-        allProviderFilter.value = Section.ProviderFilter(
-            mapping,
-            artist.providerMappings ?: emptyList(),
-        )
+    fun loadAll(itemList: ItemList) {
+        allProviderFilter.update {
+            it?.copy(current = itemList)
+        }
 
         viewModelScope.launch {
-            val itemId = mapping.itemId
-            val providerInstance = mapping.providerInstance
-            allItems.set(Request.Artist.getAlbums(itemId, providerInstance))
+            allItems.set(itemList.toRequest())
         }
     }
 
-    fun loadTopTracksForProvider(mapping: ProviderMapping) {
-        topTracksProviderInfo.value = Section.ProviderFilter(
-            mapping,
-            artist.providerMappings ?: emptyList(),
-        )
+    fun loadTopTracks(itemList: ItemList) {
+        topTracksFilter.update { it?.copy(current = itemList) }
 
         viewModelScope.launch {
-            val itemId = mapping.itemId
-            val providerInstance = mapping.providerInstance
-            topTrackItems.set(Request.Artist.getTopTracks(itemId, providerInstance))
+            topTrackItems.set(itemList.toRequest())
         }
     }
 
@@ -166,8 +154,8 @@ class ArtistDetailsViewModel(
         val providerFilter: ProviderFilter? = null,
     ) {
         data class ProviderFilter(
-            val current: ProviderMapping,
-            val options: List<ProviderMapping>,
+            val current: ItemList,
+            val options: List<ItemList>,
         )
     }
 }

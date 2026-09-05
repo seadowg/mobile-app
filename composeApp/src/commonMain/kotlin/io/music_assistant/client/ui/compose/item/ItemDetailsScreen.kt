@@ -66,7 +66,6 @@ import io.music_assistant.client.data.model.client.items.PodcastEpisode
 import io.music_assistant.client.data.model.client.items.Track
 import io.music_assistant.client.data.model.client.stringResource
 import io.music_assistant.client.data.model.client.toClickContext
-import io.music_assistant.client.data.model.server.ProviderMapping
 import io.music_assistant.client.settings.ViewMode
 import io.music_assistant.client.ui.compose.common.CenteredProgress
 import io.music_assistant.client.ui.compose.common.CenteredText
@@ -941,7 +940,7 @@ private fun ArtistContent(
                     title = Res.string.artist_section_all.toDisplayString(),
                     onNavigateClick = onNavigateClick,
                     onNavigateToList = onNavigateToList,
-                    onFilterSelected = artistDetailsViewModel::loadAlbumsForProvider,
+                    onFilterSelected = artistDetailsViewModel::loadAll,
                     onPlayChildClick = onPlayChildClick,
                     playlistActions = playlistActions,
                     libraryActions = libraryActions,
@@ -957,7 +956,7 @@ private fun ArtistContent(
                     title = stringResource(Res.string.artist_section_top).toDisplayString(),
                     onNavigateClick = onNavigateClick,
                     onNavigateToList = onNavigateToList,
-                    onFilterSelected = artistDetailsViewModel::loadTopTracksForProvider,
+                    onFilterSelected = artistDetailsViewModel::loadTopTracks,
                     onPlayChildClick = onPlayChildClick,
                     playlistActions = playlistActions,
                     libraryActions = libraryActions,
@@ -976,7 +975,7 @@ private fun <T : AppMediaItem> SectionRow(
     title: DisplayString,
     onNavigateClick: (AppMediaItem) -> Unit,
     onNavigateToList: (String, ItemList) -> Unit,
-    onFilterSelected: (ProviderMapping) -> Unit = {},
+    onFilterSelected: (ItemList) -> Unit = {},
     onPlayChildClick: PlayHandler<AppMediaItem>,
     playlistActions: PlaylistActions,
     libraryActions: LibraryActions,
@@ -991,11 +990,11 @@ private fun <T : AppMediaItem> SectionRow(
                 title = title,
                 items = section.items,
                 list = section.itemList,
-                filter = if (section.providerFilter != null && artist.providerMappings != null) {
+                filter = if (section.providerFilter != null) {
                     ItemCategory.Filter(
-                        label = section.providerFilter.current.providerDomain.toDisplayString(),
+                        label = section.providerFilter.current.providerDomain?.toDisplayString() ?: DisplayString.Raw(""),
                         options = section.providerFilter.options,
-                        labelTransform = { it.providerDomain.toDisplayString() },
+                        labelTransform = { it.providerDomain?.toDisplayString() ?: DisplayString.Raw("") },
                         contentDescription = Res.string.cd_provider_filter,
                     )
                 } else {
